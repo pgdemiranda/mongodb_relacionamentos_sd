@@ -138,7 +138,6 @@ R: escolhemos utilizar deixar uma coleção de ligação chamada seguidores. Par
 Escolha o domínio da **rede social de leitura** para aplicar os padrões.
 Para cada item, **entregue o documento JSON resultante + 2–3 frases de justificativa**.
 
-<<<<<<< HEAD
 ### 3.1 — Extended Reference
 
 Mostre como você aplicaria **Extended Reference** para exibir uma **resenha** já
@@ -166,8 +165,6 @@ Em vez de salvar apenas o ID do livro e do usuário, guardamos os dados textuais
   }
 }
 ```
-=======
->>>>>>> 31e74a4 (Parte 1 completa, Parte 3 parcialmente completa)
 ### 3.2 — Subset
 
 Aplique o **Subset Pattern** ao **livro** de forma a embarcar só as **3 resenhas
