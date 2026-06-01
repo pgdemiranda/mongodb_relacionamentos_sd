@@ -145,6 +145,24 @@ com o **título do livro** e o **nome do usuário**, sem `$lookup` na leitura co
 Indique **quais campos** você duplicaria e **por que são "estáveis o suficiente"**.
 Cite **um campo que você NÃO duplicaria** e por quê.
 
+R: Duplicariamos as colunas(titulo do livro e nome do usuário), pois são campos altamente estáveis que quase nunca mudam na vida real. O ganho de velocidade ao abrir a página  compensaria o raríssimo custo de atualizar eses dados em lote caso um dia mudem.
+
+Já as colunas(preco do livro e status_estoque) são dados altamente voláteis (que mudam a todo momento por promoções ou vendas). Duplicá-los geraria um pesadelo de sincronização, exigindo milhares de atualizações no banco a cada alteração de valor.
+
+Exemplo: {
+  "_id": "resenha_abc123",
+  "nota": 5,
+  "texto": "Uma obra-prima absoluta sobre o absurdo da condição humana.",
+  "livro": {
+    "id": "livro_kafka_01",
+    "titulo": "O Processo"
+  },
+  "usuario": {
+    "id": "usr_aderaldo_99",
+    "nome": "Aderaldo Neto"
+  }
+}
+
 ### 3.2 — Subset
 
 Aplique o **Subset Pattern** ao **livro** de forma a embarcar só as **3 resenhas
