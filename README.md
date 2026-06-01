@@ -149,7 +149,9 @@ R: Duplicariamos as colunas(titulo do livro e nome do usuário), pois são campo
 
 Já as colunas(preco do livro e status_estoque) são dados altamente voláteis (que mudam a todo momento por promoções ou vendas). Duplicá-los geraria um pesadelo de sincronização, exigindo milhares de atualizações no banco a cada alteração de valor.
 
-Exemplo: {
+Em vez de salvar apenas o ID do livro e do usuário, guardamos os dados textuais que vão direto para a tela:
+
+``` {
   "_id": "resenha_abc123",
   "nota": 5,
   "texto": "Uma obra-prima absoluta sobre o absurdo da condição humana.",
@@ -158,11 +160,11 @@ Exemplo: {
     "titulo": "O Processo"
   },
   "usuario": {
-    "id": "usr_aderaldo_99",
-    "nome": "Aderaldo Neto"
+    "id": "usr_teste_99",
+    "nome": "leitor_123"
   }
 }
-
+```
 ### 3.2 — Subset
 
 Aplique o **Subset Pattern** ao **livro** de forma a embarcar só as **3 resenhas
