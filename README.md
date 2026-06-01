@@ -107,7 +107,7 @@ c. Ref: situação semelhante, livros que são fundantes de um segmento literár
 
 d. Embed: podemos deixar a informação junto com o usuário, que vai adicionar (muito raramente excluir) alguns livros que podem ser acessados juntos, informações que não vão ser alteradas com frequência e que podem ser disponibilizadas instantaneamente quando necessário.
 
-e. Ref: um problema em redes sociais, aplicados ao contexto de MongoDB, é, na nossa visão, está ligado aos nós que representam usuários influentes e que podem agregar mais e mais seguidores. Eles podem representar um estouro do limite do documento, mas se decidíssemos por embedding, teríamos que lidar com o custo computacional de atualização dos seguirores, a frequência de leitura de quem os seguidores também seguem e assim em diante, acaba também representando um problema que pode ser solucionado ao isolar os seguidores em uma coleção separada.
+e. Ref: um problema em redes sociais, aplicados ao contexto de MongoDB, está na relação em dos nós que representam usuários influentes e que podem agregar mais e mais seguidores. Eles podem representar um estouro do limite do documento, mas se decidíssemos por embedding, teríamos que lidar com o custo computacional de atualização dos seguirores, a frequência de leitura de quem os seguidores também seguem e assim em diante, acaba também representando um problema que pode ser solucionado ao isolar os seguidores em uma coleção separada.
 
 ### 1.2 — Cardinalidade que muda a decisão
 
@@ -138,6 +138,7 @@ R: escolhemos utilizar deixar uma coleção de ligação chamada seguidores. Par
 Escolha o domínio da **rede social de leitura** para aplicar os padrões.
 Para cada item, **entregue o documento JSON resultante + 2–3 frases de justificativa**.
 
+<<<<<<< HEAD
 ### 3.1 — Extended Reference
 
 Mostre como você aplicaria **Extended Reference** para exibir uma **resenha** já
@@ -165,12 +166,30 @@ Em vez de salvar apenas o ID do livro e do usuário, guardamos os dados textuais
   }
 }
 ```
+=======
+>>>>>>> 31e74a4 (Parte 1 completa, Parte 3 parcialmente completa)
 ### 3.2 — Subset
 
 Aplique o **Subset Pattern** ao **livro** de forma a embarcar só as **3 resenhas
 mais recentes** + um contador, mantendo o restante numa coleção `resenhas`.
 Mostre o documento `livro` e descreva, em **2 frases**, como a tela "ver todas as
 resenhas" funciona.
+
+R: é ignorada o array em embedd do livro, sendo feita uma segunda consulta indexada e paginada na coleção `resenhas` filtrando pelo identificador do livro. Utilizamos o timestamp `ts` para ordernar os documentos de forma decrescente, criando um histórico com o limitador `limit` e paginação `skip`, poupando a memória do servidor e da aplicação sempre que o script for executado. 
+
+- `livro`:
+``` json
+{
+  "_id": "6a1ca6aa0bab98d9cc9df8a9",
+  "title": "MongoDB in Action",
+  "resenhas_top": [
+    { "usuario": "Ana", "nota": 5, "texto": "Instigante e prático.", "ts": {"$date": "2026-05-31T21:55:00Z"} },
+    { "usuario": "Bob", "nota": 4, "texto": "Muito bom para engenheiros.", "ts": {"$date": "2026-05-31T21:54:00Z"} },
+    { "usuario": "Carlos", "nota": 5, "texto": "Gostei muito da abordagem.", "ts": {"$date": "2026-05-31T21:53:00Z"} }
+  ],
+  "resenhas_count": 1450
+}
+```
 
 ### 3.3 — Computed
 
@@ -179,7 +198,30 @@ resenhas** de cada livro **atualizados em tempo de escrita** (em vez de recalcul
 com `aggregate` a cada leitura). Mostre o documento e o `updateOne` com `$inc`
 que você rodaria a cada nova resenha.
 
-R: 
+R: a ideia foi realizar escrita eficiente transformando operações custosas de agregação em consulta de leitura direta com complexidade constante O(1).
+Ao invés de realizarmos toda vez na leitura a operação, simplesmente é feito um update com `$inc` e `$set`.
+
+- `livro_resumo`:
+```json
+{
+  "_id": "6a1ca6aa0bab98d9cc9df8a9",
+  "title": "MongoDB in Action",
+  "nota_media": 4.54,
+  "total_resenhas": 11,
+  "ultimo_update": {"$date": "2026-05-31T23:34:56.892Z"}
+}
+```
+
+- `updateOne`:
+db.livro_resumo.updateOne(
+  { _id: livroId },
+  { 
+    $set: { nota_media: novaMediaCalculada, ultimo_update: new Date() }, 
+    $inc: { total_resenhas: 1 } 
+  },
+  { upsert: true }
+);
+
 
 ### 3.4 — Escolha livre: Bucket, Outlier ou Versioning
 
@@ -187,4 +229,34 @@ Escolha **um** padrão entre **Bucket**, **Outlier** ou **Schema Versioning** e
 aplique-o a um problema **plausível** da rede de leitura (ex.: eventos de
 "páginas lidas por dia" → Bucket; usuário com milhões de seguidores → Outlier;
 campo `bio` que virou objeto estruturado → Versioning). Justifique a escolha.
-# mongodb_relacionamentos_sd
+
+R: escolhemos o Outlier aplicado à relação de seguidores de usuários, adotado para evitar que desvios drásticos de cardinalidade no ecossistema (como autores célebres que acumulam milhões de conexões) imponham penalidades de performance ou forcem buscas referenciadas para a totalidade de usuários comuns. Fazemos a leitura instantânea em array embutido para 99% das contas e, mediante o acionamento do marcador `has_extras: true`, é dada a aplicação a desviar o fluxo incremental de seguidores para a coleção segregada seguidores_extras.
+
+- Usuário Comum (Seguidores Embutidos):
+``` json
+{
+  "_id": "U1",
+  "nome": "Pablo Miranda",
+  "seguidores_users": [ "u2", "u3", "u42" ]
+}
+```
+
+- Usuário Outlier:
+``` json
+{
+  "_id": "U99",
+  "nome": "Stephen King",
+  "seguidores_users": [ "u1", "u2", "u3", "...u1000" ],
+  "has_extras": true
+}
+``` 
+
+- Coleção `seguidores_extras`:
+``` json
+{
+  "_id": {"$oid": "6a1cc8d4da574b59709df8a3"},
+  "celebridade": "U99",
+  "seguidor": "extra_user_0",
+  "ts": {"$date": "2026-05-31T21:48:56.000Z"}
+}
+```
